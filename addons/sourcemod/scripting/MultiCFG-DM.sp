@@ -8,7 +8,7 @@ public Plugin myinfo =
 	name = "MultiCFG DM", 
 	author = "SHiva", 
 	description = "DM Config Changer", 
-	version = "0.3", 
+	version = "0.3b", 
 	url = "http://www.sourcemod.net/"
 };
 
@@ -23,6 +23,8 @@ int modeIndex;
 
 bool isLoop = false;
 bool isLastMode = false;
+bool isH3busDM;
+int	 modeCfgChange = 0;
 
 char CONFIG_PATH[255];
 char SOUND_PATH[255] = "ui/bonus_alert_start";
@@ -85,7 +87,7 @@ public Action CycleControl(Handle timer)
 	{
 		char sAdvertMessage[255];
 		
-		Format(sAdvertMessage, sizeof(sAdvertMessage), "<font color='#ff0000'>Warmup  Mod</font>\nChanging to <font color='#66ff66'>%s</font> in <font color='#66ff66'>%i</font> seconds", sNextGameName, iCurrentGameTime);		
+		Format(sAdvertMessage, sizeof(sAdvertMessage), "<font size='32' color='#ff0000'>Los geht's</font>\nNächste Runde: <font color='#66ff66'>%s</font> in <font color='#66ff66'>%i</font> Sekunden", sNextGameName, iCurrentGameTime);		
 	
 		if(iCurrentGameTime >= 1)
 		{
@@ -99,8 +101,40 @@ public Action CycleControl(Handle timer)
 void ExecConfig(bool sound)
 {
 	char sCommand[255];
+	char sConfigName[52];
+	char sModeCfgChange[10];
 	
-	Format(sCommand, sizeof(sCommand), "dm_load \"Game Modes\" \"%s\" \"respawn\"", sCurrentGameName);
+	sConfigName = sCurrentGameName;
+	
+	switch (modeCfgChange) // 0: equip, 1: respawn, 2: restart, 3: nextround
+	{
+		case 1:
+		{
+			sModeCfgChange = "respawn";
+		}
+		case 2:
+		{
+			sModeCfgChange = "restart";
+		}
+		case 3:
+		{
+			sModeCfgChange = "nextround";
+		}
+		default:
+		{
+			sModeCfgChange = "equip";
+		}
+	}
+	
+	if(!isH3busDM)
+	{
+		StrCat(sConfigName, sizeof(sConfigName), ".ini");
+		Format(sCommand, sizeof(sCommand), "dm_load \"%s\" \"%s\"", sConfigName, sModeCfgChange);
+	}
+	else
+	{
+		Format(sCommand, sizeof(sCommand), "dm_load \"Game Modes\" \"%s\" \"%s\"", sConfigName, sModeCfgChange);
+	}
 	
 	ServerCommand(sCommand);
 	
@@ -174,6 +208,9 @@ void LoadConfig()
 	if (kvConfig.JumpToKey("Config"))
 	{
 		isLoop = view_as<bool>(KvGetNum(kvConfig, "Loop"));
+		isH3busDM = view_as<bool>(KvGetNum(kvConfig, "H3busCompatibility"));
+		modeCfgChange = view_as<int>(KvGetNum(kvConfig, "CfgChange"));
+		
 	}
 	else
 	{
